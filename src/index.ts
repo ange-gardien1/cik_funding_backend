@@ -11,6 +11,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY!
 );
 
+
 // Routes
 app.get('/', (c) => c.text('CIK Funding API is running'));
 
@@ -20,30 +21,19 @@ app.get('/test', (c) => {
 
 });
 
+// Example: fetch content from database
+app.get('/post', async (c) => {
+  const { data, error } = await supabase.from('post').select('*');
+  console.log('Supabase data:', data);
+  console.log('Supabase error:', error);
 
-// Get all projects
-app.get('/projects', async (c) => {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) return c.json({ error: error.message }, 400);
-  return c.json(data);
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+  return c.json({ posts: data });
 });
 
-// Create project
-app.post('/projects', async (c) => {
-  const body = await c.req.json();
-  const { title, description } = body;
 
-  const { data, error } = await supabase
-    .from('projects')
-    .insert([{ title, description }]);
-
-  if (error) return c.json({ error: error.message }, 400);
-  return c.json(data);
-});
 
 // Start server
 serve(app, (info) => {
