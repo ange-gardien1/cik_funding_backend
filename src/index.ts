@@ -24,8 +24,7 @@ app.get('/test', (c) => {
 // Example: fetch content from database
 app.get('/post', async (c) => {
   const { data, error } = await supabase.from('post').select('*');
-  console.log('Supabase data:', data);
-  console.log('Supabase error:', error);
+
 
   if (error) {
     return c.json({ error: error.message }, 500);
