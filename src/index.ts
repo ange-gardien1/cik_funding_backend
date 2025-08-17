@@ -35,12 +35,12 @@ app.get('/post', async (c) => {
 
 
 // Start server on Railway's assigned port
-// const port = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT) || 3000;
 
-// serve({
-//   fetch: app.fetch,
-//   port,
-// });
+serve({
+  fetch: app.fetch,
+  port,
+});
 
 
-export default app
+// export default app
