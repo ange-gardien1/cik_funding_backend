@@ -34,9 +34,12 @@ app.get('/post', async (c) => {
 
 
 
-// Start server
-serve(app, (info) => {
-  console.log(`🚀 Hono API running on http://localhost:${info.port}`);
+// Start server on Railway's assigned port
+const port = Number(process.env.PORT) || 3000;
+
+serve({
+  fetch: app.fetch,
+  port,
 });
 
 
