@@ -15,6 +15,13 @@ const supabase = createClient(
 // Routes
 app.get('/', (c) => c.text('CIK Funding API is running'));
 
+app.get('/env', (c) => {
+  return c.json({
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_KEY: process.env.SUPABASE_KEY ? 'exists' : 'missing',
+  });
+});
+
 // Test route
 app.get('/test', (c) => {
   return c.json({ message: 'Hello from Hono Backend', status: 'success' });
