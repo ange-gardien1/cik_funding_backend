@@ -70,12 +70,19 @@ app.put('/post/:id', async (c) => {
 
 // DELETE a post
 app.delete('/post/:id', async (c) => {
-  const id = c.req.param('id');
+  try {
+    const id = c.req.param('id');
 
-  const { error } = await supabase.from('post').delete().eq('id', id);
-  if (error) return c.json({ error: error.message }, 400);
+    const { data, error } = await supabase.from('post').delete().eq('id', id).select();
+    if (error) {
+      return c.json({ error: error.message }, 400);
+    }
 
-  return c.json({ message: 'Post deleted successfully' });
+    return c.json({ message: 'Post deleted successfully', deleted: data || [] });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+  }
 });
+
 
 export default app;
