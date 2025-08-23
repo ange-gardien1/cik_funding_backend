@@ -1,21 +1,19 @@
 {
   "name": "cikfunding_backend",
   "version": "1.0.0",
-  "main": "src/index.ts",
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel dev"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.0",
+    "hono": "^4.9.2",
     "@supabase/supabase-js": "^2.55.0",
-    "dotenv": "^17.2.1",
-    "hono": "^4.9.2"
+    "dotenv": "^17.2.1"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
+    "typescript": "^5.x",
     "tsx": "^3.x",
-    "typescript": "^5.x"
+    "@types/node": "^24.3.0"
   }
 }
