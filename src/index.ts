@@ -40,15 +40,4 @@ app.get('/post', async (c) => {
 });
 
 
-
-// Start server on Railway's assigned port
-
-
-const port = Number(process.env.PORT) || 3000
-console.log(`🚀 API running on http://0.0.0.0:${port}`)
-
-serve({
-  fetch: app.fetch,
-  port,
-})
-// export default app
+export default app;
