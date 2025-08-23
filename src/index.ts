@@ -44,7 +44,6 @@ app.get('/post', async (c) => {
 // Start server on Railway's assigned port
 
 
-// 🚀 Railway requires binding to 0.0.0.0:<PORT>
 const port = Number(process.env.PORT) || 3000
 console.log(`🚀 API running on http://0.0.0.0:${port}`)
 
