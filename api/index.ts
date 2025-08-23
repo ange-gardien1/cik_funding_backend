@@ -4,37 +4,78 @@ import 'dotenv/config';
 
 const app = new Hono();
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_KEY!
 );
 
 // Root route
-app.get('/', (c) => c.text('CIK Funding API is running'));
-
-// Environment check route
-app.get('/env', (c) => {
-  return c.json({
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_KEY: process.env.SUPABASE_KEY ? 'exists' : 'missing',
-  });
-});
+app.get('/', (c) => c.text('CIK Funding API is running 🚀'));
 
 // Test route
 app.get('/test', (c) => {
   return c.json({ message: 'Hello from Hono Backend', status: 'success' });
 });
 
-// Example: fetch content from "post" table
+/**
+ * CRUD for "post" table
+ */
+
+// READ all posts
 app.get('/post', async (c) => {
   const { data, error } = await supabase.from('post').select('*');
-
-  if (error) {
-    return c.json({ error: error.message }, 500);
-  }
-
+  if (error) return c.json({ error: error.message }, 500);
   return c.json({ posts: data });
+});
+
+// READ single post
+app.get('/post/:id', async (c) => {
+  const id = c.req.param('id');
+  const { data, error } = await supabase.from('post').select('*').eq('id', id).single();
+  if (error) return c.json({ error: error.message }, 404);
+  return c.json({ post: data });
+});
+
+// CREATE a new post
+app.post('/post', async (c) => {
+  const body = await c.req.json();
+  const { title, content } = body;
+
+  const { data, error } = await supabase
+    .from('post')
+    .insert([{ title, content }])
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 400);
+  return c.json({ post: data, message: 'Post created successfully' }, 201);
+});
+
+// UPDATE a post
+app.put('/post/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  const { title, content } = body;
+
+  const { data, error } = await supabase
+    .from('post')
+    .update({ title, content })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 400);
+  return c.json({ post: data, message: 'Post updated successfully' });
+});
+
+// DELETE a post
+app.delete('/post/:id', async (c) => {
+  const id = c.req.param('id');
+
+  const { error } = await supabase.from('post').delete().eq('id', id);
+  if (error) return c.json({ error: error.message }, 400);
+
+  return c.json({ message: 'Post deleted successfully' });
 });
 
 export default app;
