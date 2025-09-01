@@ -109,8 +109,9 @@ const cikWithSigner = cikContract.connect(backendWallet);
 
 app.get('/wallet/:address/balance', async (c) => {
   try {
-    const { address } = c.req.param();
+    const address = c.req.param('address'); // FIXED
     const balance = await cikContract.balanceOf(address);
+
     return c.json({
       address,
       balance: ethers.formatUnits(balance, 18),
@@ -120,6 +121,7 @@ app.get('/wallet/:address/balance', async (c) => {
     return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
 });
+
 
 app.post('/fund/:projectId', async (c) => {
   try {
