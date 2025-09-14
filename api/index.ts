@@ -167,23 +167,37 @@ await tx.wait();
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
-// =======================
-// AUTH ROUTES
-// =======================
+
 
 // SIGN UP
 app.post('/auth/signup', async (c) => {
   try {
     const { username, email, password, wallet_address } = await c.req.json();
 
-    // Check if username already exists
-    const { data: existingUser } = await supabase
+    // Basic input validation
+    if (!username || !email || !password) {
+      return c.json({ error: 'Username, email, and password are required' }, 400);
+    }
+    if (!email.includes('@')) {
+      return c.json({ error: 'Invalid email address' }, 400);
+    }
+
+    // Check if username or email already exists
+    const { data: existingUser, error: fetchError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, username, email')
       .or(`username.eq.${username},email.eq.${email}`)
       .maybeSingle();
 
+    if (fetchError) throw fetchError;
+
     if (existingUser) {
+      if (existingUser.username === username) {
+        return c.json({ error: 'Username is already taken' }, 400);
+      }
+      if (existingUser.email === email) {
+        return c.json({ error: 'Email is already registered' }, 400);
+      }
       return c.json({ error: 'Username or email already taken' }, 400);
     }
 
@@ -191,16 +205,17 @@ app.post('/auth/signup', async (c) => {
     const password_hash = await bcrypt.hash(password, 10);
 
     // Insert user
-    const { data, error } = await supabase
+    const { data, error: insertError } = await supabase
       .from('users')
       .insert([{ username, email, password_hash, wallet_address }])
       .select('id, username, email, wallet_address, role, status')
       .single();
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
     return c.json({ message: 'User created successfully', user: data }, 201);
   } catch (err) {
+    console.error('Signup error:', err); // Log to server for debugging
     return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
 });
@@ -210,14 +225,18 @@ app.post('/auth/signin', async (c) => {
   try {
     const { username, password } = await c.req.json();
 
+    if (!username || !password) {
+      return c.json({ error: 'Username and password are required' }, 400);
+    }
+
     // Find user by username
-    const { data: user, error } = await supabase
+    const { data: user, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('username', username)
       .single();
 
-    if (error || !user) {
+    if (fetchError || !user) {
       return c.json({ error: 'Invalid username or password' }, 401);
     }
 
@@ -247,10 +266,7 @@ app.post('/auth/signin', async (c) => {
       }
     });
   } catch (err) {
+    console.error('Signin error:', err); // Log server errors
     return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
 });
-
-
-
-export default app;
