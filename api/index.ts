@@ -167,8 +167,6 @@ await tx.wait();
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
-
-
 // SIGN UP
 app.post('/auth/signup', async (c) => {
   try {
@@ -270,3 +268,7 @@ app.post('/auth/signin', async (c) => {
     return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
 });
+
+
+
+export default app;
