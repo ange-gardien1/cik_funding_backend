@@ -26,11 +26,16 @@ app.get('/test', (c) => {
  */
 
 // READ all posts
+// Backend: get all posts with username
 app.get('/post', async (c) => {
-  const { data, error } = await supabase.from('post').select('*');
+  const { data, error } = await supabase
+    .from('post')
+    .select('*, users(username)'); // join with users table to get username
+
   if (error) return c.json({ error: error.message }, 500);
   return c.json({ posts: data });
 });
+
 
 // READ single post
 app.get('/post/:id', async (c) => {
