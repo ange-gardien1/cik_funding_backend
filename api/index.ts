@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 import { ethers } from 'ethers';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
 
 const app = new Hono();
 
@@ -156,6 +159,97 @@ await tx.wait();
   }
 });
 
+
+
+
+
+
+// JWT secret
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+
+// =======================
+// AUTH ROUTES
+// =======================
+
+// SIGN UP
+app.post('/auth/signup', async (c) => {
+  try {
+    const { username, email, password, wallet_address } = await c.req.json();
+
+    // Check if username already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .or(`username.eq.${username},email.eq.${email}`)
+      .maybeSingle();
+
+    if (existingUser) {
+      return c.json({ error: 'Username or email already taken' }, 400);
+    }
+
+    // Hash password
+    const password_hash = await bcrypt.hash(password, 10);
+
+    // Insert user
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{ username, email, password_hash, wallet_address }])
+      .select('id, username, email, wallet_address, role, status')
+      .single();
+
+    if (error) throw error;
+
+    return c.json({ message: 'User created successfully', user: data }, 201);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
+  }
+});
+
+// SIGN IN
+app.post('/auth/signin', async (c) => {
+  try {
+    const { username, password } = await c.req.json();
+
+    // Find user by username
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
+
+    if (error || !user) {
+      return c.json({ error: 'Invalid username or password' }, 401);
+    }
+
+    // Verify password
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return c.json({ error: 'Invalid username or password' }, 401);
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return c.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        wallet_address: user.wallet_address,
+        role: user.role,
+        status: user.status
+      }
+    });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
+  }
+});
 
 
 
