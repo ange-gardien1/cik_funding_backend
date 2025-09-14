@@ -40,19 +40,38 @@ app.get('/post/:id', async (c) => {
   return c.json({ post: data });
 });
 
-// CREATE a new post
 app.post('/post', async (c) => {
-  const body = await c.req.json();
-  const { title, content } = body;
+  try {
+    const authHeader = c.req.header('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
 
-  const { data, error } = await supabase
-    .from('post')
-    .insert([{ title, content }])
-    .select()
-    .single();
+    if (!token) return c.json({ error: 'Unauthorized' }, 401);
 
-  if (error) return c.json({ error: error.message }, 400);
-  return c.json({ post: data, message: 'Post created successfully' }, 201);
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, username: string, role: string };
+    const userId = decoded.id;
+
+    const body = await c.req.json();
+    const { title, description, image_url, fund_wallet_address, target_amount } = body;
+
+    const { data, error } = await supabase
+      .from('post')
+      .insert([{
+        user_id: userId,
+        title,
+        description,
+        image_url,
+        fund_wallet_address,
+        target_amount
+      }])
+      .select()
+      .single();
+
+    if (error) return c.json({ error: error.message }, 400);
+
+    return c.json({ post: data, message: 'Post created successfully' }, 201);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
+  }
 });
 
 // UPDATE a post
@@ -199,10 +218,10 @@ app.post('/auth/signup', async (c) => {
       return c.json({ error: 'Username or email already taken' }, 400);
     }
 
-    // Hash password
+  
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Insert user
+
     const { data, error: insertError } = await supabase
       .from('users')
       .insert([{ username, email, password_hash, wallet_address }])
