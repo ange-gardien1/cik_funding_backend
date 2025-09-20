@@ -155,19 +155,37 @@ app.post('/fund/:projectId', async (c) => {
     const projectId = c.req.param('projectId');
     const body = await c.req.json();
     const { funder, amount, projectWallet } = body;
-    
 
-    // Transfer tokens
-  const tx = await (cikWithSigner as any).transfer(
-  projectWallet,
-  ethers.parseUnits(amount.toString(), 18)
-);
-await tx.wait();
+    // Validate amount
+    if (!amount || parseFloat(amount) <= 0) {
+      return c.json({ error: 'Amount must be greater than 0' }, 400);
+    }
 
-    // Save in Supabase
+    // Check funder's wallet balance
+    const balance = await cikContract.balanceOf(funder);
+    const balanceInCIK = parseFloat(ethers.formatUnits(balance, 18));
+
+    if (parseFloat(amount) > balanceInCIK) {
+      return c.json({ error: 'Insufficient balance to fund this amount' }, 400);
+    }
+
+    // Transfer tokens using backend wallet
+    const tx = await (cikWithSigner as any).transfer(
+      projectWallet,
+      ethers.parseUnits(amount.toString(), 18)
+    );
+    await tx.wait();
+
+    // Save funding in Supabase with timestamp
     const { data, error } = await supabase
       .from('fundings')
-      .insert([{ project_id: projectId, funder, amount, tx_hash: tx.hash }])
+      .insert([{
+        project_id: projectId,
+        funder,
+        amount,
+        tx_hash: tx.hash,
+        created_at: new Date().toISOString() // add timestamp
+      }])
       .select()
       .single();
 
@@ -176,13 +194,14 @@ await tx.wait();
     return c.json({
       message: 'Funding successful',
       funding: data,
-      txHash: tx.hash
+      txHash: tx.hash,
+      fundedAt: data.created_at // return timestamp to frontend
     });
   } catch (err) {
+    console.error('Funding error:', err);
     return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
 });
-
 
 
 
